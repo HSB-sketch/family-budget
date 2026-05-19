@@ -1,112 +1,133 @@
 'use client';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import EntryList from './EntryList';
 
-const COLORS = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16', '#f97316', '#6b7280'];
+const COLORS = ['#6366f1','#8b5cf6','#22d3ee','#10b981','#f59e0b','#ef4444','#ec4899','#84cc16','#f97316','#6b7280'];
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function StatCard({ label, value, sub, accent }) {
+  return (
+    <div style={{ ...sc.card, borderColor: accent + '33' }}>
+      <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 26, fontWeight: 700, color: accent }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+}
+
+const sc = {
+  card: {
+    background: 'rgba(255,255,255,0.04)', border: '1px solid', borderRadius: 14,
+    padding: '1rem 1.2rem', flex: 1,
+  },
+};
 
 export default function Summary({ expenses, categories, budgets, userId, isAdmin, month, year, onMonthChange, onYearChange, onChanged }) {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
   const filtered = expenses.filter((e) => {
     const d = new Date(e.date);
     return d.getMonth() + 1 === month && d.getFullYear() === year;
   });
 
+  const myExpenses = filtered.filter((e) => e.user_id === userId);
   const grandTotal = filtered.reduce((s, e) => s + parseFloat(e.amount), 0);
+  const myTotal = myExpenses.reduce((s, e) => s + parseFloat(e.amount), 0);
 
-  const catData = categories.map((cat) => {
+  const catData = categories.map((cat, i) => {
     const spent = filtered.filter((e) => e.category_id === cat.id).reduce((s, e) => s + parseFloat(e.amount), 0);
     const budget = budgets.find((b) => b.category_id === cat.id && b.month === month && b.year === year)?.amount || 0;
-    return { name: cat.name, icon: cat.icon, spent, budget: parseFloat(budget), variance: parseFloat(budget) - spent };
+    return { name: cat.name, icon: cat.icon, spent, budget: parseFloat(budget), variance: parseFloat(budget) - spent, color: COLORS[i % COLORS.length] };
   }).filter((c) => c.spent > 0 || c.budget > 0);
 
-  const pieData = catData.filter((c) => c.spent > 0).map((c) => ({ name: c.name, value: c.spent }));
+  const totalBudget = catData.reduce((s, c) => s + c.budget, 0);
+  const overCount = catData.filter((c) => c.budget > 0 && c.variance < 0).length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Month/Year picker */}
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <select value={month} onChange={(e) => onMonthChange(parseInt(e.target.value))} style={selectStyle}>
-          {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Month picker */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <select value={month} onChange={(e) => onMonthChange(parseInt(e.target.value))} style={sel}>
+          {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
         </select>
-        <select value={year} onChange={(e) => onYearChange(parseInt(e.target.value))} style={selectStyle}>
-          {[2024, 2025, 2026, 2027].map((y) => <option key={y} value={y}>{y}</option>)}
+        <select value={year} onChange={(e) => onYearChange(parseInt(e.target.value))} style={sel}>
+          {[2024,2025,2026,2027].map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
+        <span style={{ marginLeft: 'auto', fontSize: 13, color: '#6b7280' }}>My Summary</span>
       </div>
 
-      {/* Total */}
-      <div style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', padding: '1.5rem', borderRadius: '16px', color: '#fff', textAlign: 'center' }}>
-        <p style={{ margin: '0 0 4px', fontSize: '14px', opacity: 0.85 }}>Total spent — {months[month - 1]} {year}</p>
-        <p style={{ margin: 0, fontSize: '36px', fontWeight: '700' }}>${grandTotal.toFixed(2)}</p>
+      {/* Stat row */}
+      <div style={{ display: 'flex', gap: 12 }}>
+        <StatCard label="My Spending" value={`$${myTotal.toFixed(0)}`} sub={MONTHS[month-1] + ' ' + year} accent="#6366f1" />
+        <StatCard label="Family Total" value={`$${grandTotal.toFixed(0)}`} sub="all members" accent="#8b5cf6" />
+        {totalBudget > 0 && (
+          <StatCard label="Budget Left" value={`$${(totalBudget - grandTotal).toFixed(0)}`} sub={overCount > 0 ? `${overCount} over` : 'on track'} accent={overCount > 0 ? '#ef4444' : '#10b981'} />
+        )}
       </div>
 
-      {catData.length === 0 && (
-        <p style={{ textAlign: 'center', color: '#999', padding: '1rem 0' }}>No expenses for this period.</p>
-      )}
-
-      {/* Bar chart: spent vs budget */}
+      {/* Bar chart */}
       {catData.length > 0 && (
-        <div>
-          <h3 style={sectionTitle}>Spending vs Budget</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={catData} margin={{ top: 4, right: 4, left: -10, bottom: 40 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" angle={-35} textAnchor="end" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip formatter={(val) => `$${val.toFixed(2)}`} />
-              <Legend wrapperStyle={{ fontSize: '12px' }} />
-              <Bar dataKey="spent" name="Spent" fill="#667eea" radius={[4,4,0,0]} />
-              <Bar dataKey="budget" name="Budget" fill="#e0e7ff" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Pie chart */}
-      {pieData.length > 0 && (
-        <div>
-          <h3 style={sectionTitle}>Spending Breakdown</h3>
+        <div style={panel}>
+          <div style={panelTitle}>Spending vs Budget</div>
           <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" outerRadius={75} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip formatter={(val) => `$${val.toFixed(2)}`} />
-            </PieChart>
+            <BarChart data={catData} margin={{ top: 4, right: 4, left: -16, bottom: 36 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="name" angle={-35} textAnchor="end" tick={{ fontSize: 10, fill: '#6b7280' }} />
+              <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} />
+              <Tooltip
+                contentStyle={{ background: '#0e1120', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 12 }}
+                formatter={(val) => `$${parseFloat(val).toFixed(2)}`}
+              />
+              <Bar dataKey="spent" name="Spent" radius={[4,4,0,0]}>
+                {catData.map((c, i) => <Cell key={i} fill={c.color} />)}
+              </Bar>
+              <Bar dataKey="budget" name="Budget" fill="rgba(255,255,255,0.08)" radius={[4,4,0,0]} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
       {/* Variance table */}
       {catData.length > 0 && (
-        <div>
-          <h3 style={sectionTitle}>Budget Variance</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {catData.map((c) => (
-              <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff', borderRadius: '10px', border: '1px solid #eee' }}>
-                <span style={{ fontSize: '14px', color: '#555' }}>{c.icon} {c.name}</span>
-                <div style={{ display: 'flex', gap: '16px', fontSize: '13px', textAlign: 'right' }}>
-                  <span style={{ color: '#667eea' }}>${c.spent.toFixed(2)}</span>
+        <div style={panel}>
+          <div style={panelTitle}>Budget Variance</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {catData.map((c, i) => {
+              const pct = c.budget > 0 ? Math.min((c.spent / c.budget) * 100, 100) : 0;
+              const over = c.budget > 0 && c.variance < 0;
+              return (
+                <div key={i} style={varRow}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 13, color: '#d1d5db' }}>{c.icon} {c.name}</span>
+                    <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
+                      <span style={{ color: c.color, fontWeight: 600 }}>${c.spent.toFixed(2)}</span>
+                      {c.budget > 0 && (
+                        <span style={{ color: over ? '#ef4444' : '#10b981', fontWeight: 600 }}>
+                          {over ? `↑ $${Math.abs(c.variance).toFixed(2)} over` : `$${c.variance.toFixed(2)} left`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   {c.budget > 0 && (
-                    <span style={{ color: c.variance >= 0 ? '#10b981' : '#ef4444', fontWeight: '600' }}>
-                      {c.variance >= 0 ? `$${c.variance.toFixed(2)} left` : `$${Math.abs(c.variance).toFixed(2)} over`}
-                    </span>
+                    <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: over ? '#ef4444' : c.color, borderRadius: 2, transition: 'width 0.4s' }} />
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Recent entries */}
-      <div>
-        <h3 style={sectionTitle}>All Entries — {months[month - 1]} {year}</h3>
+      {/* Entry list */}
+      <div style={panel}>
+        <div style={panelTitle}>All Entries — {MONTHS[month-1]} {year}</div>
         <EntryList expenses={filtered} categories={categories} userId={userId} isAdmin={isAdmin} onChanged={onChanged} />
       </div>
     </div>
   );
 }
 
-const sectionTitle = { fontSize: '13px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 10px' };
-const selectStyle = { padding: '8px 12px', fontSize: '14px', borderRadius: '8px', border: '1.5px solid #e0e0e0', outline: 'none', background: '#fff' };
+const sel = { padding: '8px 12px', fontSize: 13, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', color: '#f0f0f8', outline: 'none' };
+const panel = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.2rem' };
+const panelTitle = { fontSize: 11, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14 };
+const varRow = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: '10px 12px' };

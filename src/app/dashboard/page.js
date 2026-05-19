@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import AddExpenseForm from '../../components/AddExpenseForm';
 import Summary from '../../components/Summary';
 import BudgetSettings from '../../components/BudgetSettings';
+import FamilyView from '../../components/FamilyView';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [budgets, setBudgets] = useState([]);
+  const [profiles, setProfiles] = useState([]);
   const [tab, setTab] = useState('add');
   const [loading, setLoading] = useState(true);
   const now = new Date();
@@ -31,16 +33,18 @@ export default function DashboardPage() {
 
   const loadData = useCallback(async () => {
     if (!user) return;
-    const [{ data: prof }, { data: cats }, { data: exps }, { data: buds }] = await Promise.all([
+    const [{ data: prof }, { data: cats }, { data: exps }, { data: buds }, { data: profs }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('categories').select('*').order('name'),
       supabase.from('expenses').select('*, profiles(name)').order('date', { ascending: false }),
       supabase.from('budgets').select('*'),
+      supabase.from('profiles').select('*'),
     ]);
     setProfile(prof);
     setCategories(cats || []);
     setExpenses(exps || []);
     setBudgets(buds || []);
+    setProfiles(profs || []);
     setLoading(false);
   }, [user]);
 
@@ -55,87 +59,111 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <p style={{ color: '#999' }}>Loading...</p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#07080f' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, border: '3px solid rgba(99,102,241,0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ color: '#6b7280', fontSize: 14 }}>Loading…</p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   const tabs = [
-    { id: 'add', label: '+ Add Expense' },
-    { id: 'summary', label: '📊 Summary' },
-    ...(isAdmin ? [{ id: 'budget', label: '🎯 Set Budgets' }] : []),
+    { id: 'add',    label: '+ Add Expense',      icon: '➕' },
+    { id: 'summary', label: 'My Summary',          icon: '📊' },
+    { id: 'family', label: 'Family View',          icon: '👨‍👩‍👧' },
+    { id: 'budget', label: 'Budgets',              icon: '🎯' },
   ];
 
+  const initials = (profile?.name || user?.email || '?').slice(0, 1).toUpperCase();
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f9f7f4' }}>
+    <div style={{ minHeight: '100vh', background: '#07080f' }}>
+      {/* Subtle top glow */}
+      <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 200, background: 'radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+
       {/* Header */}
-      <header style={{ background: '#fff', borderBottom: '1px solid #eee', padding: '0 1rem' }}>
-        <div style={{ maxWidth: '560px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '56px' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: '600', color: '#667eea', margin: 0 }}>💰 Family Budget</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '13px', color: '#888' }}>{profile?.name || user?.email}</span>
-            <button onClick={logout} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#999', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e0e0e0' }}>
-              Sign out
-            </button>
+      <header style={hdr.wrap}>
+        <div style={hdr.inner}>
+          <div style={hdr.logo}>
+            <div style={hdr.logoIcon}>💰</div>
+            <span style={hdr.logoText}>FamilyBudget</span>
+          </div>
+          <div style={hdr.right}>
+            <span style={hdr.userName}>{profile?.name || user?.email}</span>
+            <div style={hdr.avatar}>{initials}</div>
+            <button onClick={logout} style={hdr.signOut}>Sign out</button>
           </div>
         </div>
       </header>
 
-      {/* Main */}
-      <main style={{ maxWidth: '560px', margin: '0 auto', padding: '1rem' }}>
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
+      {/* Nav tabs */}
+      <nav style={nav.wrap}>
+        <div style={nav.inner}>
           {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                flex: 1, padding: '10px 8px', borderRadius: '10px', fontSize: '13px', fontWeight: '500',
-                border: tab === t.id ? '1.5px solid #667eea' : '1.5px solid #e0e0e0',
-                background: tab === t.id ? '#eef0ff' : '#fff',
-                color: tab === t.id ? '#667eea' : '#666',
-                cursor: 'pointer',
-              }}
-            >
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ ...nav.tab, ...(tab === t.id ? nav.tabActive : {}) }}>
+              <span style={{ marginRight: 6 }}>{t.icon}</span>
               {t.label}
+              {tab === t.id && <div style={nav.indicator} />}
             </button>
           ))}
         </div>
+      </nav>
 
+      {/* Content */}
+      <main style={{ maxWidth: 640, margin: '0 auto', padding: '1.5rem 1rem 4rem', position: 'relative', zIndex: 1 }}>
         {tab === 'add' && (
-          <AddExpenseForm
-            categories={categories}
-            userId={user.id}
-            onAdded={loadData}
-          />
+          <AddExpenseForm categories={categories} userId={user.id} onAdded={loadData} />
         )}
-
         {tab === 'summary' && (
           <Summary
-            expenses={expenses}
-            categories={categories}
-            budgets={budgets}
-            userId={user.id}
-            isAdmin={isAdmin}
-            month={month}
-            year={year}
-            onMonthChange={setMonth}
-            onYearChange={setYear}
+            expenses={expenses} categories={categories} budgets={budgets}
+            userId={user.id} isAdmin={isAdmin}
+            month={month} year={year}
+            onMonthChange={setMonth} onYearChange={setYear}
             onChanged={loadData}
           />
         )}
-
-        {tab === 'budget' && isAdmin && (
+        {tab === 'family' && (
+          <FamilyView
+            expenses={expenses} categories={categories} budgets={budgets}
+            profiles={profiles} month={month} year={year}
+            onMonthChange={setMonth} onYearChange={setYear}
+          />
+        )}
+        {tab === 'budget' && (
           <BudgetSettings
-            categories={categories}
-            budgets={budgets}
-            month={month}
-            year={year}
-            onChanged={loadData}
+            categories={categories} budgets={budgets}
+            month={month} year={year} onChanged={loadData}
+            isAdmin={isAdmin}
           />
         )}
       </main>
     </div>
   );
 }
+
+const hdr = {
+  wrap: { position: 'sticky', top: 0, zIndex: 50, background: 'rgba(7,8,15,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' },
+  inner: { maxWidth: 640, margin: '0 auto', padding: '0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 60 },
+  logo: { display: 'flex', alignItems: 'center', gap: 10 },
+  logoIcon: { width: 32, height: 32, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 },
+  logoText: { fontSize: 16, fontWeight: 700, color: '#f0f0f8' },
+  right: { display: 'flex', alignItems: 'center', gap: 10 },
+  userName: { fontSize: 13, color: '#9ca3af' },
+  avatar: { width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' },
+  signOut: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '5px 11px', fontSize: 12, color: '#9ca3af', cursor: 'pointer' },
+};
+
+const nav = {
+  wrap: { background: 'rgba(7,8,15,0.6)', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' },
+  inner: { maxWidth: 640, margin: '0 auto', padding: '0 1rem', display: 'flex', gap: 4 },
+  tab: {
+    position: 'relative', padding: '12px 14px', fontSize: 13, fontWeight: 500,
+    background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer',
+    whiteSpace: 'nowrap', transition: 'color 0.2s',
+  },
+  tabActive: { color: '#a5b4fc' },
+  indicator: { position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '60%', height: 2, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: 1 },
+};
