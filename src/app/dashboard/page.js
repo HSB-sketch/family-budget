@@ -8,6 +8,15 @@ import BudgetSettings from '../../components/BudgetSettings';
 import FamilyView from '../../components/FamilyView';
 import AnnualView from '../../components/AnnualView';
 
+// Rotating beach header images
+const HEADER_IMGS = [
+  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1400&q=70',
+  'https://images.unsplash.com/photo-1510414842594-a61c69b5ae57?w=1400&q=70',
+  'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1400&q=70',
+  'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1400&q=70',
+  'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1400&q=70',
+];
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -21,6 +30,9 @@ export default function DashboardPage() {
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
+
+  // Pick a hero image based on day
+  const heroImg = HEADER_IMGS[now.getDate() % HEADER_IMGS.length];
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -60,52 +72,66 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#07080f' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f0f9ff' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 48, height: 48, border: '3px solid rgba(99,102,241,0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: '#6b7280', fontSize: 14 }}>Loading…</p>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>🌊</div>
+          <p style={{ color: '#64748b', fontSize: 14 }}>Loading your budget…</p>
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   const tabs = [
-    { id: 'add',    label: '+ Add Expense',  icon: '➕' },
-    { id: 'summary', label: 'My Summary',    icon: '📊' },
-    { id: 'family', label: 'Family View',    icon: '👨‍👩‍👧' },
-    { id: 'annual', label: 'Annual',         icon: '📅' },
-    { id: 'budget', label: 'Budgets',        icon: '🎯' },
+    { id: 'add',    label: '+ Add',     icon: '➕' },
+    { id: 'summary', label: 'My Month', icon: '📊' },
+    { id: 'family', label: 'Family',    icon: '👨‍👩‍👧' },
+    { id: 'annual', label: 'Annual',    icon: '📅' },
+    { id: 'budget', label: 'Budgets',   icon: '🎯' },
   ];
 
   const initials = (profile?.name || user?.email || '?').slice(0, 1).toUpperCase();
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Quick spend this month
+  const monthlyTotal = expenses
+    .filter((e) => { const d = new Date(e.date); return d.getMonth()+1===month && d.getFullYear()===year; })
+    .reduce((s, e) => s + parseFloat(e.amount), 0);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#07080f' }}>
-      {/* Subtle top glow */}
-      <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 200, background: 'radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+    <div style={{ minHeight: '100vh', background: '#f0f9ff' }}>
 
-      {/* Header */}
-      <header style={hdr.wrap}>
-        <div style={hdr.inner}>
-          <div style={hdr.logo}>
-            <div style={hdr.logoIcon}>💰</div>
-            <span style={hdr.logoText}>FamilyBudget</span>
+      {/* Hero header */}
+      <div style={{ ...hero.wrap, backgroundImage: `url(${heroImg})` }}>
+        <div style={hero.overlay} />
+        <div style={hero.inner}>
+          {/* Top bar */}
+          <div style={hero.topBar}>
+            <div style={hero.logo}>
+              <span style={{ fontSize: 20 }}>🌊</span>
+              <span style={hero.logoText}>FamilyBudget</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={hero.avatar}>{initials}</div>
+              <span style={hero.userName}>{profile?.name || user?.email}</span>
+              <button onClick={logout} style={hero.signOut}>Sign out</button>
+            </div>
           </div>
-          <div style={hdr.right}>
-            <span style={hdr.userName}>{profile?.name || user?.email}</span>
-            <div style={hdr.avatar}>{initials}</div>
-            <button onClick={logout} style={hdr.signOut}>Sign out</button>
+          {/* Hero copy */}
+          <div style={hero.copy}>
+            <h1 style={hero.title}>Good {now.getHours() < 12 ? 'morning' : now.getHours() < 18 ? 'afternoon' : 'evening'}, {profile?.name?.split(' ')[0] || 'there'} 👋</h1>
+            <p style={hero.subtitle}>
+              <strong style={{ color: '#fff' }}>${monthlyTotal.toFixed(2)}</strong> spent in {MONTHS[month-1]} {year}
+            </p>
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Nav tabs */}
+      {/* Sticky nav tabs */}
       <nav style={nav.wrap}>
         <div style={nav.inner}>
           {tabs.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)} style={{ ...nav.tab, ...(tab === t.id ? nav.tabActive : {}) }}>
-              <span style={{ marginRight: 6 }}>{t.icon}</span>
+              <span style={{ marginRight: 5 }}>{t.icon}</span>
               {t.label}
               {tab === t.id && <div style={nav.indicator} />}
             </button>
@@ -114,7 +140,7 @@ export default function DashboardPage() {
       </nav>
 
       {/* Content */}
-      <main style={{ maxWidth: 640, margin: '0 auto', padding: '1.5rem 1rem 4rem', position: 'relative', zIndex: 1 }}>
+      <main style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1rem 4rem' }}>
         {tab === 'add' && (
           <AddExpenseForm categories={categories} userId={user.id} onAdded={loadData} />
         )}
@@ -152,26 +178,29 @@ export default function DashboardPage() {
   );
 }
 
-const hdr = {
-  wrap: { position: 'sticky', top: 0, zIndex: 50, background: 'rgba(7,8,15,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.06)' },
-  inner: { maxWidth: 640, margin: '0 auto', padding: '0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: 60 },
-  logo: { display: 'flex', alignItems: 'center', gap: 10 },
-  logoIcon: { width: 32, height: 32, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 },
-  logoText: { fontSize: 16, fontWeight: 700, color: '#f0f0f8' },
-  right: { display: 'flex', alignItems: 'center', gap: 10 },
-  userName: { fontSize: 13, color: '#9ca3af' },
-  avatar: { width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' },
-  signOut: { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, padding: '5px 11px', fontSize: 12, color: '#9ca3af', cursor: 'pointer' },
+const hero = {
+  wrap: { position: 'relative', backgroundSize: 'cover', backgroundPosition: 'center', height: 220 },
+  overlay: { position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(2,48,71,0.45) 0%, rgba(2,48,71,0.65) 100%)' },
+  inner: { position: 'relative', zIndex: 1, maxWidth: 680, margin: '0 auto', padding: '0 1rem', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingTop: '1rem', paddingBottom: '1.5rem' },
+  topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  logo: { display: 'flex', alignItems: 'center', gap: 8 },
+  logoText: { fontSize: 16, fontWeight: 700, color: '#fff' },
+  avatar: { width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' },
+  userName: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+  signOut: { background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 8, padding: '5px 12px', fontSize: 12, color: '#fff', cursor: 'pointer' },
+  copy: {},
+  title: { fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 4 },
+  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.75)' },
 };
 
 const nav = {
-  wrap: { background: 'rgba(7,8,15,0.6)', borderBottom: '1px solid rgba(255,255,255,0.05)', overflowX: 'auto' },
-  inner: { maxWidth: 640, margin: '0 auto', padding: '0 1rem', display: 'flex', gap: 4 },
+  wrap: { position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', overflowX: 'auto' },
+  inner: { maxWidth: 680, margin: '0 auto', padding: '0 1rem', display: 'flex', gap: 2 },
   tab: {
-    position: 'relative', padding: '12px 14px', fontSize: 13, fontWeight: 500,
-    background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer',
+    position: 'relative', padding: '13px 14px', fontSize: 13, fontWeight: 500,
+    background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
     whiteSpace: 'nowrap', transition: 'color 0.2s',
   },
-  tabActive: { color: '#a5b4fc' },
-  indicator: { position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '60%', height: 2, background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', borderRadius: 1 },
+  tabActive: { color: '#0ea5e9', fontWeight: 600 },
+  indicator: { position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '70%', height: 2.5, background: 'linear-gradient(90deg, #0ea5e9, #14b8a6)', borderRadius: 2 },
 };

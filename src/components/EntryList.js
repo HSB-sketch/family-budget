@@ -38,11 +38,15 @@ export default function EntryList({ expenses, categories, userId, isAdmin, onCha
   };
 
   if (!expenses.length) {
-    return <p style={{ textAlign: 'center', color: '#4b5563', padding: '2rem 0', fontSize: 14 }}>No expenses for this period.</p>;
+    return (
+      <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#94a3b8', fontSize: 14 }}>
+        🏖️ No entries yet
+      </div>
+    );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {expenses.map((exp) => {
         const canEdit = isAdmin || exp.user_id === userId;
 
@@ -71,15 +75,15 @@ export default function EntryList({ expenses, categories, userId, isAdmin, onCha
           <div key={exp.id} style={card}>
             <span style={{ fontSize: 20, minWidth: 26, textAlign: 'center' }}>{catIcon(exp.category_id)}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#d1d5db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {catName(exp.category_id)}
               </p>
-              <p style={{ margin: '2px 0 0', fontSize: 11, color: '#6b7280' }}>
+              <p style={{ margin: '2px 0 0', fontSize: 11, color: '#94a3b8' }}>
                 {exp.profiles?.name || 'Unknown'} · {exp.date}{exp.note ? ` · ${exp.note}` : ''}
               </p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-              <span style={{ fontWeight: 700, fontSize: 14, color: '#a5b4fc' }}>${parseFloat(exp.amount).toFixed(2)}</span>
+              <span style={{ fontWeight: 700, fontSize: 14, color: '#0369a1' }}>${parseFloat(exp.amount).toFixed(2)}</span>
               {canEdit && (
                 <>
                   <button onClick={() => startEdit(exp)} style={iconBtn} title="Edit">✏️</button>
@@ -94,9 +98,9 @@ export default function EntryList({ expenses, categories, userId, isAdmin, onCha
   );
 }
 
-const card = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.05)' };
-const editCard = { padding: '12px 14px', background: 'rgba(99,102,241,0.08)', borderRadius: 12, border: '1px solid rgba(99,102,241,0.2)' };
-const iconBtn = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, padding: '3px', opacity: 0.6 };
-const inlineInput = { padding: '8px 10px', fontSize: 13, borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f0f0f8', outline: 'none', width: '100%', boxSizing: 'border-box' };
-const saveBtnStyle = { flex: 1, padding: '8px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 };
-const cancelBtnStyle = { flex: 1, padding: '8px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#9ca3af', cursor: 'pointer', fontSize: 13 };
+const card = { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#f8fafc', borderRadius: 10, border: '1px solid #f1f5f9' };
+const editCard = { padding: '12px 14px', background: '#f0f9ff', borderRadius: 12, border: '1.5px solid #bae6fd' };
+const iconBtn = { background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, padding: '3px', opacity: 0.55 };
+const inlineInput = { padding: '8px 10px', fontSize: 13, borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#0f172a', outline: 'none', width: '100%', boxSizing: 'border-box' };
+const saveBtnStyle = { flex: 1, padding: '8px', borderRadius: 8, border: 'none', background: '#0ea5e9', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 };
+const cancelBtnStyle = { flex: 1, padding: '8px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer', fontSize: 13 };

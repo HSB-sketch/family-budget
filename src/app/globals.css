@@ -1,21 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:       #07080f;
-  --surface:  #0e1120;
-  --card:     rgba(255,255,255,0.04);
-  --border:   rgba(255,255,255,0.08);
-  --blue:     #6366f1;
-  --purple:   #8b5cf6;
-  --cyan:     #22d3ee;
+  --bg:       #f0f7ff;
+  --surface:  #ffffff;
+  --card:     rgba(255,255,255,0.88);
+  --border:   rgba(0,0,0,0.08);
+  --ocean:    #0ea5e9;
+  --deep:     #0369a1;
+  --teal:     #14b8a6;
+  --sand:     #f59e0b;
+  --coral:    #f97316;
   --green:    #10b981;
   --red:      #ef4444;
-  --amber:    #f59e0b;
-  --text:     #f0f0f8;
-  --muted:    #6b7280;
-  --subtle:   rgba(255,255,255,0.06);
+  --text:     #0f172a;
+  --muted:    #64748b;
+  --subtle:   rgba(14,165,233,0.07);
 }
 
 html, body {
@@ -27,10 +28,11 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-input, select, button, textarea {
-  font-family: inherit;
-}
+input, select, button, textarea { font-family: inherit; }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(14,165,233,0.2); border-radius: 3px; }
+
+/* select option fix for light mode */
+select option { background: #fff; color: #0f172a; }
