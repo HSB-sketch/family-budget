@@ -6,6 +6,7 @@ import AddExpenseForm from '../../components/AddExpenseForm';
 import Summary from '../../components/Summary';
 import BudgetSettings from '../../components/BudgetSettings';
 import FamilyView from '../../components/FamilyView';
+import AnnualView from '../../components/AnnualView';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -70,10 +71,11 @@ export default function DashboardPage() {
   }
 
   const tabs = [
-    { id: 'add',    label: '+ Add Expense',      icon: '➕' },
-    { id: 'summary', label: 'My Summary',          icon: '📊' },
-    { id: 'family', label: 'Family View',          icon: '👨‍👩‍👧' },
-    { id: 'budget', label: 'Budgets',              icon: '🎯' },
+    { id: 'add',    label: '+ Add Expense',  icon: '➕' },
+    { id: 'summary', label: 'My Summary',    icon: '📊' },
+    { id: 'family', label: 'Family View',    icon: '👨‍👩‍👧' },
+    { id: 'annual', label: 'Annual',         icon: '📅' },
+    { id: 'budget', label: 'Budgets',        icon: '🎯' },
   ];
 
   const initials = (profile?.name || user?.email || '?').slice(0, 1).toUpperCase();
@@ -130,6 +132,12 @@ export default function DashboardPage() {
             expenses={expenses} categories={categories} budgets={budgets}
             profiles={profiles} month={month} year={year}
             onMonthChange={setMonth} onYearChange={setYear}
+          />
+        )}
+        {tab === 'annual' && (
+          <AnnualView
+            expenses={expenses} categories={categories} budgets={budgets}
+            profiles={profiles} year={year} onYearChange={setYear}
           />
         )}
         {tab === 'budget' && (
