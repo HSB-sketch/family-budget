@@ -7,6 +7,7 @@ import Summary from '../../components/Summary';
 import BudgetSettings from '../../components/BudgetSettings';
 import FamilyView from '../../components/FamilyView';
 import AnnualView from '../../components/AnnualView';
+import CategoryManager from '../../components/CategoryManager';
 
 // Rotating beach header images
 const HEADER_IMGS = [
@@ -87,6 +88,7 @@ export default function DashboardPage() {
     { id: 'family', label: 'Family',    icon: '👨‍👩‍👧' },
     { id: 'annual', label: 'Annual',    icon: '📅' },
     { id: 'budget', label: 'Budgets',   icon: '🎯' },
+    ...(isAdmin ? [{ id: 'categories', label: 'Categories', icon: '🏷️' }] : []),
   ];
 
   const initials = (profile?.name || user?.email || '?').slice(0, 1).toUpperCase();
@@ -172,6 +174,9 @@ export default function DashboardPage() {
             month={month} year={year} onChanged={loadData}
             isAdmin={isAdmin}
           />
+        )}
+        {tab === 'categories' && isAdmin && (
+          <CategoryManager categories={categories} onChanged={loadData} />
         )}
       </main>
     </div>
